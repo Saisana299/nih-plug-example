@@ -11,18 +11,18 @@ description = "A short description of your plugin"
 members = ["xtask"]
 
 [lib]
-crate-type = ["cdylib"]
+crate-type = ["cdylib", "lib"]
 
 [dependencies]
 # [ENG] Remove the `assert_process_allocs` feature to allow allocations on the audio thread in debug builds.
 # [JP] `assert_process_allocs`機能を削除して、デバッグビルドのオーディオスレッドでのアロケーションを許可します。
-nih_plug = { git = "https://github.com/robbert-vdh/nih-plug.git", features = ["assert_process_allocs"] }
+nih_plug = { git = "https://github.com/robbert-vdh/nih-plug.git", features = ["assert_process_allocs", "standalone"] }
 # [ENG] Uncomment the below line to disable the on-by-default VST3 feature to remove the GPL compatibility requirement
 # [JP] 以下の行のコメントを解除して、デフォルトで有効になっているVST3機能を無効にし、GPL互換の要件を削除します。
 # nih_plug = { git = "https://github.com/robbert-vdh/nih-plug.git", default-features = false, features = ["assert_process_allocs"] }
 
-# nih_plug_icedの追加
-nih_plug_iced = { git = "https://github.com/robbert-vdh/nih-plug.git" }
+# nih_plug_viziaの追加
+nih_plug_vizia = { git = "https://github.com/robbert-vdh/nih-plug.git" }
 
 [profile.release]
 lto = "thin"

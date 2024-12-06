@@ -1,10 +1,10 @@
 use nih_plug::prelude::*;
 use std::{f32::consts::PI, sync::Arc};
-use nih_plug_iced::IcedState;
+use nih_plug_vizia::ViziaState;
 
 mod editor;
 
-struct NihPlugExample {
+pub struct NihPlugExample {
     params: Arc<NihPlugExampleParams>,
     sample_rate: f32,
 
@@ -26,7 +26,7 @@ struct NihPlugExample {
 #[derive(Params)]
 struct NihPlugExampleParams {
     #[persist = "editor_state"]
-    editor_state: Arc<IcedState>,
+    editor_state: Arc<ViziaState>,
 
     #[id = "gain"] // ゲイン
     pub gain: FloatParam,
@@ -215,8 +215,11 @@ impl NihPlugExample {
 
     fn process_lowpass(&mut self, sample: f32, channel: usize) -> f32 {
         let input = sample;
-        let output = self.b0 / self.a0 * input + self.b1 / self.a0 * self.in1[channel] + self.b2 / self.a0 * self.in2[channel]
-            - self.a1 / self.a0 * self.out1[channel] - self.a2 / self.a0 * self.out2[channel];
+        let output = self.b0 / self.a0 * input
+                        + self.b1 / self.a0 * self.in1[channel]
+                        + self.b2 / self.a0 * self.in2[channel]
+                        - self.a1 / self.a0 * self.out1[channel]
+                        - self.a2 / self.a0 * self.out2[channel];
 
         self.in2[channel] = self.in1[channel];
         self.in1[channel] = input;
