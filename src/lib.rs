@@ -4,9 +4,13 @@ use nih_plug_vizia::ViziaState;
 
 mod editor;
 
+const PEAK_METER_DECAY_MS: f64 = 150.0;
+
 pub struct NihPlugExample {
     params: Arc<NihPlugExampleParams>,
     sample_rate: f32,
+    peak_meter_decay_weight: f32,
+    peak_meter: Arc<AtomicF32>,
 
     // フィルタ係数
     a0: f32,
@@ -46,6 +50,8 @@ impl Default for NihPlugExample {
         Self {
             params: Arc::new(NihPlugExampleParams::default()),
             sample_rate: 1.0,
+            peak_meter_decay_weight: 1.00,
+            peak_meter: Arc::new(AtomicF32::new(util::MINUS_INFINITY_DB)),
 
             a0: 1.0,
             a1: 0.0,
@@ -147,6 +153,7 @@ impl Plugin for NihPlugExample {
     fn editor(&mut self, _async_executor: AsyncExecutor<Self>) -> Option<Box<dyn Editor>> {
         editor::create(
             self.params.clone(),
+            self.peak_meter.clone(),
             self.params.editor_state.clone(),
         )
     }
@@ -158,6 +165,8 @@ impl Plugin for NihPlugExample {
         _context: &mut impl InitContext<Self>,
     ) -> bool {
         self.sample_rate = buffer_config.sample_rate;
+        self.peak_meter_decay_weight = 0.25f64
+            .powf((buffer_config.sample_rate as f64 * PEAK_METER_DECAY_MS / 1000.0).recip()) as f32;
 
         true
     }
@@ -188,11 +197,29 @@ impl Plugin for NihPlugExample {
         self.update_lowpass(cutoff, resonance);
 
         for channel_samples in buffer.iter_samples() {
+            let mut amplitude = 0.0;
+            let num_samples = channel_samples.len();
+
+            let gain = self.params.gain.smoothed.next();
             for (channel, sample) in channel_samples.into_iter().enumerate() {
                 if channel == 0 || channel == 1 {
                     *sample = self.process_lowpass(*sample, channel);
-                    *sample *= self.params.gain.smoothed.next();
+                    *sample *= gain;
+                    amplitude += *sample;
                 }
+            }
+
+            if self.params.editor_state.is_open() {
+                amplitude = (amplitude / num_samples as f32).abs();
+                let current_peak_meter = self.peak_meter.load(std::sync::atomic::Ordering::Relaxed);
+                let new_peak_meter = if amplitude > current_peak_meter {
+                    amplitude
+                } else {
+                    current_peak_meter * self.peak_meter_decay_weight
+                        + amplitude * (1.0 - self.peak_meter_decay_weight)
+                };
+
+                self.peak_meter.store(new_peak_meter, std::sync::atomic::Ordering::Relaxed);
             }
         }
 
