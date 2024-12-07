@@ -17,7 +17,7 @@ struct Data {
 impl Model for Data {}
 
 pub(crate) fn default_state() -> Arc<ViziaState> {
-    ViziaState::new(|| (300, 250))
+    ViziaState::new(|| (480, 300))
 }
 
 pub(crate) fn create(
@@ -26,8 +26,7 @@ pub(crate) fn create(
     editor_state: Arc<ViziaState>,
 ) -> Option<Box<dyn Editor>> {
     create_vizia_editor(editor_state, ViziaTheming::Custom, move |cx, _| {
-        assets::register_noto_sans_light(cx);
-        assets::register_noto_sans_thin(cx);
+        assets::register_noto_sans_regular(cx);
 
         Data {
             params: params.clone(),
@@ -35,32 +34,30 @@ pub(crate) fn create(
         }
         .build(cx);
 
-        ResizeHandle::new(cx);
-
         VStack::new(cx, |cx| {
             Label::new(cx, "LPF GUI")
                 .font_family(vec![FamilyOwned::Name(String::from(assets::NOTO_SANS))])
-                .font_weight(FontWeightKeyword::Thin)
+                .font_weight(FontWeightKeyword::Regular)
                 .font_size(30.0)
                 .color(Color::white())
                 .height(Pixels(50.0))
                 .child_top(Stretch(1.0))
                 .child_bottom(Pixels(0.0));
 
-            Label::new(cx, "Cutoff").color(Color::white());
+            Label::new(cx, "Cutoff").color(Color::white()).child_top(Pixels(10.0));
             ParamSlider::new(cx, Data::params, |params| &params.cutoff)
                 .color(Color::white())
-                .border_color(Color::white());
+                .border_color(Color::gray());
 
-            Label::new(cx, "Resonance").color(Color::white());
+            Label::new(cx, "Resonance").color(Color::white()).child_top(Pixels(10.0));
             ParamSlider::new(cx, Data::params, |params| &params.resonance)
                 .color(Color::white())
-                .border_color(Color::white());
+                .border_color(Color::gray());
 
-            Label::new(cx, "Gain").color(Color::white());
+            Label::new(cx, "Gain").color(Color::white()).child_top(Pixels(10.0));
             ParamSlider::new(cx, Data::params, |params| &params.gain)
                 .color(Color::white())
-                .border_color(Color::white());
+                .border_color(Color::gray());
 
             PeakMeter::new(
                 cx,
@@ -68,12 +65,13 @@ pub(crate) fn create(
                     .map(|peak_meter| util::gain_to_db(peak_meter.load(Ordering::Relaxed))),
                 Some(Duration::from_millis(600)),
             )
-            // This is how adding padding works in vizia
             .top(Pixels(10.0));
         })
         .background_color(Color::rgb(40, 43, 48))
         .row_between(Pixels(0.0))
         .child_left(Stretch(1.0))
         .child_right(Stretch(1.0));
+
+        // ResizeHandle::new(cx);
     })
 }
