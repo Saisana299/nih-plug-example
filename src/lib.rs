@@ -1,5 +1,5 @@
 use nih_plug::prelude::*;
-use std::{f32::consts::PI, sync::Arc};
+use std::{f32::consts::{self, PI}, sync::Arc};
 use nih_plug_vizia::ViziaState;
 
 mod editor;
@@ -25,6 +25,12 @@ pub struct NihPlugExample {
     in2: [f32; 2],
     out1: [f32; 2],
     out2: [f32; 2],
+
+    // 音源用
+    phase: f32,
+    midi_note_id: u8,
+    midi_note_freq: f32,
+    midi_note_gain: Smoother<f32>,
 }
 
 #[derive(Params)]
@@ -64,6 +70,11 @@ impl Default for NihPlugExample {
             in2: [0.0; 2],
             out1: [0.0; 2],
             out2: [0.0; 2],
+
+            phase: 0.0,
+            midi_note_id: 0,
+            midi_note_freq: 1.0,
+            midi_note_gain: Smoother::new(SmoothingStyle::Linear(5.0)),
         }
     }
 }
@@ -137,7 +148,7 @@ impl Plugin for NihPlugExample {
     }];
 
 
-    const MIDI_INPUT: MidiConfig = MidiConfig::None;
+    const MIDI_INPUT: MidiConfig = MidiConfig::Basic;
     const MIDI_OUTPUT: MidiConfig = MidiConfig::None;
 
     const SAMPLE_ACCURATE_AUTOMATION: bool = true;
@@ -175,18 +186,25 @@ impl Plugin for NihPlugExample {
         self.in2 = [0.0; 2];
         self.out1 = [0.0; 2];
         self.out2 = [0.0; 2];
+
+        self.phase = 0.0;
+        self.midi_note_id = 0;
+        self.midi_note_freq = 1.0;
+        self.midi_note_gain.reset(0.0);
     }
 
     fn process(
         &mut self,
         buffer: &mut Buffer,
         _aux: &mut AuxiliaryBuffers,
-        _context: &mut impl ProcessContext<Self>,
+        context: &mut impl ProcessContext<Self>,
     ) -> ProcessStatus {
 
         if self.params.bypass.value() {
             return ProcessStatus::Normal;
         }
+
+        let mut next_event = context.next_event();
 
         // パラメータの値を取得
         let cutoff = self.params.cutoff.smoothed.next();
@@ -195,13 +213,49 @@ impl Plugin for NihPlugExample {
         // フィルタ係数を更新
         self.update_lowpass(cutoff, resonance);
 
-        for channel_samples in buffer.iter_samples() {
+        for (sample_id, channel_samples) in buffer.iter_samples().enumerate() {
             let mut amplitude = 0.0;
             let num_samples = channel_samples.len();
 
             let gain = self.params.gain.smoothed.next();
+
+            let sine = {
+                while let Some(event) = next_event {
+                    if event.timing() > sample_id as u32 {
+                        break;
+                    }
+                    match event {
+                        NoteEvent::NoteOn {note, velocity, ..} => {
+                            self.midi_note_id = note;
+                            self.midi_note_freq = util::midi_note_to_freq(note);
+                            self.midi_note_gain.set_target(self.sample_rate, velocity);
+                        }
+
+                        NoteEvent::NoteOff {note, ..}
+                        if note == self.midi_note_id => {
+                            self.midi_note_gain.set_target(self.sample_rate, 0.0);
+                        }
+
+                        NoteEvent::PolyPressure { note, pressure, .. }
+                        if note == self.midi_note_id => {
+                            self.midi_note_gain.set_target(self.sample_rate, pressure);
+                        }
+                        _ => {}
+                    }
+
+                    next_event = context.next_event();
+                }
+
+                // サイン波の計算
+                self.caluculate_sine(self.midi_note_freq) * self.midi_note_gain.next()
+            };
+
             for (channel, sample) in channel_samples.into_iter().enumerate() {
                 if channel == 0 || channel == 1 {
+                    // サイン波の追加
+                    *sample += sine * util::db_to_gain_fast(gain);
+
+                    // フィルタの処理
                     *sample = self.process_lowpass(*sample, channel);
                     *sample *= gain;
                     amplitude += *sample;
@@ -253,6 +307,18 @@ impl NihPlugExample {
         self.out1[channel] = output;
 
         return output;
+    }
+
+    fn caluculate_sine(&mut self, frequency: f32) -> f32 {
+        let phase_delta = frequency / self.sample_rate;
+        let sine = (self.phase * consts::TAU).sin();
+
+        self.phase += phase_delta;
+        if self.phase >= 1.0 {
+            self.phase -= 1.0;
+        }
+
+        sine
     }
 }
 
