@@ -104,11 +104,10 @@ impl Default for NihPlugExampleParams {
             resonance: FloatParam::new(
                 "Resonance",
                 1.0,
-                FloatRange::SymmetricalSkewed {
+                FloatRange::Skewed {
                     min: 0.1,
                     max: 30.0,
-                    factor: FloatRange::skew_factor(-1.0),
-                    center: 1.0,
+                    factor: FloatRange::skew_factor(-2.0),
                 },
             )
             .with_unit("")

@@ -17,7 +17,7 @@ struct Data {
 impl Model for Data {}
 
 pub(crate) fn default_state() -> Arc<ViziaState> {
-    ViziaState::new(|| (480, 300))
+    ViziaState::new(|| (320, 290))
 }
 
 pub(crate) fn create(
@@ -47,17 +47,20 @@ pub(crate) fn create(
             Label::new(cx, "Cutoff").color(Color::white()).child_top(Pixels(10.0));
             ParamSlider::new(cx, Data::params, |params| &params.cutoff)
                 .color(Color::white())
-                .border_color(Color::gray());
+                .border_color(Color::gray())
+                .background_color(Color::rgb(54, 57, 62));
 
             Label::new(cx, "Resonance").color(Color::white()).child_top(Pixels(10.0));
             ParamSlider::new(cx, Data::params, |params| &params.resonance)
                 .color(Color::white())
-                .border_color(Color::gray());
+                .border_color(Color::gray())
+                .background_color(Color::rgb(54, 57, 62));
 
             Label::new(cx, "Gain").color(Color::white()).child_top(Pixels(10.0));
             ParamSlider::new(cx, Data::params, |params| &params.gain)
                 .color(Color::white())
-                .border_color(Color::gray());
+                .border_color(Color::gray())
+                .background_color(Color::rgb(54, 57, 62));
 
             PeakMeter::new(
                 cx,
