@@ -39,28 +39,25 @@ pub(crate) fn create(
                 .font_family(vec![FamilyOwned::Name(String::from(assets::NOTO_SANS))])
                 .font_weight(FontWeightKeyword::Regular)
                 .font_size(30.0)
-                .color(Color::white())
+                .color(Color::black())
                 .height(Pixels(50.0))
                 .child_top(Stretch(1.0))
                 .child_bottom(Pixels(0.0));
 
-            Label::new(cx, "Cutoff").color(Color::white()).child_top(Pixels(10.0));
+            Label::new(cx, "Cutoff").color(Color::black()).child_top(Pixels(10.0));
             ParamSlider::new(cx, Data::params, |params| &params.cutoff)
-                .color(Color::white())
-                .border_color(Color::gray())
-                .background_color(Color::rgb(54, 57, 62));
+                .color(Color::black())
+                .background_color(Color::rgb(225, 225, 225));
 
-            Label::new(cx, "Resonance").color(Color::white()).child_top(Pixels(10.0));
+            Label::new(cx, "Resonance").color(Color::black()).child_top(Pixels(10.0));
             ParamSlider::new(cx, Data::params, |params| &params.resonance)
-                .color(Color::white())
-                .border_color(Color::gray())
-                .background_color(Color::rgb(54, 57, 62));
+                .color(Color::black())
+                .background_color(Color::rgb(225, 225, 225));
 
-            Label::new(cx, "Gain").color(Color::white()).child_top(Pixels(10.0));
+            Label::new(cx, "Gain").color(Color::black()).child_top(Pixels(10.0));
             ParamSlider::new(cx, Data::params, |params| &params.gain)
-                .color(Color::white())
-                .border_color(Color::gray())
-                .background_color(Color::rgb(54, 57, 62));
+                .color(Color::black())
+                .background_color(Color::rgb(225, 225, 225));
 
             PeakMeter::new(
                 cx,
@@ -70,7 +67,7 @@ pub(crate) fn create(
             )
             .top(Pixels(10.0));
         })
-        .background_color(Color::rgb(40, 43, 48))
+        .background_color(Color::rgb(236, 236, 236))
         .row_between(Pixels(0.0))
         .child_left(Stretch(1.0))
         .child_right(Stretch(1.0));
